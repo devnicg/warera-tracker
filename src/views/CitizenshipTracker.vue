@@ -30,6 +30,12 @@ const progress = ref({ current: 0, total: 0 })
 const stats = ref({ total: 0, active: 0, inactive: 0 })
 const sortOrder = ref<'asc' | 'desc'>('desc')
 const viewMode = ref<'detailed' | 'overview'>('overview')
+const filterSourceCountryId = ref('')
+const filterDestinationCountryId = ref('')
+
+const sortedCountries = computed(() => {
+  return [...countries.value].sort((a, b) => a.name.localeCompare(b.name))
+})
 
 const allChanges = computed<FlattenedChange[]>(() => {
   const changes: FlattenedChange[] = []
@@ -55,10 +61,24 @@ const allChanges = computed<FlattenedChange[]>(() => {
   })
 })
 
+const filteredChanges = computed<FlattenedChange[]>(() => {
+  let changes = allChanges.value
+
+  if (filterSourceCountryId.value) {
+    changes = changes.filter(change => change.fromCountryId === filterSourceCountryId.value)
+  }
+
+  if (filterDestinationCountryId.value) {
+    changes = changes.filter(change => change.toCountryId === filterDestinationCountryId.value)
+  }
+
+  return changes
+})
+
 const groupedChanges = computed(() => {
   const groups = new Map<string, FlattenedChange[]>()
 
-  allChanges.value.forEach(change => {
+  filteredChanges.value.forEach(change => {
     if (!groups.has(change.username)) {
       groups.set(change.username, [])
     }
@@ -211,7 +231,7 @@ const fetchPlayersAndChanges = async () => {
               <select v-model="selectedCountryId" :disabled="loadingCountries">
                 <option value="">{{ loadingCountries ? 'Loading countries...' : 'Choose a country' }}</option>
                 <option
-                  v-for="country in countries"
+                  v-for="country in sortedCountries"
                   :key="country._id"
                   :value="country._id"
                 >
@@ -260,7 +280,7 @@ const fetchPlayersAndChanges = async () => {
         <div class="level mb-4">
           <div class="level-left">
             <div class="level-item">
-              <h3 class="title is-4">Citizenship Changes ({{ allChanges.length }} total)</h3>
+              <h3 class="title is-4">Citizenship Changes ({{ filteredChanges.length }} of {{ allChanges.length }} total)</h3>
             </div>
           </div>
           <div class="level-right">
@@ -280,6 +300,64 @@ const fetchPlayersAndChanges = async () => {
                 >
                   Detailed
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="box mb-4">
+          <h4 class="title is-5 mb-3">Filters</h4>
+          <div class="columns">
+            <div class="column">
+              <div class="field">
+                <label class="label">Source Country (From)</label>
+                <div class="control">
+                  <div class="select is-fullwidth">
+                    <select v-model="filterSourceCountryId">
+                      <option value="">All countries</option>
+                      <option
+                        v-for="country in sortedCountries"
+                        :key="country._id"
+                        :value="country._id"
+                      >
+                        {{ country.name }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="field">
+                <label class="label">Destination Country (To)</label>
+                <div class="control">
+                  <div class="select is-fullwidth">
+                    <select v-model="filterDestinationCountryId">
+                      <option value="">All countries</option>
+                      <option
+                        v-for="country in sortedCountries"
+                        :key="country._id"
+                        :value="country._id"
+                      >
+                        {{ country.name }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow" style="display: flex; align-items: flex-end;">
+              <div class="field">
+                <div class="control">
+                  <button
+                    class="button is-light"
+                    @click="filterSourceCountryId = ''; filterDestinationCountryId = ''"
+                    :disabled="!filterSourceCountryId && !filterDestinationCountryId"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             </div>
           </div>
