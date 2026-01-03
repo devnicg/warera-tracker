@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { api, type Country, type UserLite, type CitizenshipChange } from '../services/api'
 import CitizenshipDiagram from '../components/CitizenshipDiagram.vue'
+import CountrySelect from '../components/CountrySelect.vue'
 
 interface PlayerData {
   user: UserLite
@@ -32,6 +33,8 @@ const sortOrder = ref<'asc' | 'desc'>('desc')
 const viewMode = ref<'detailed' | 'overview'>('overview')
 const filterSourceCountryId = ref('')
 const filterDestinationCountryId = ref('')
+const filterStartDate = ref('')
+const filterEndDate = ref('')
 
 const sortedCountries = computed(() => {
   return [...countries.value].sort((a, b) => a.name.localeCompare(b.name))
@@ -70,6 +73,18 @@ const filteredChanges = computed<FlattenedChange[]>(() => {
 
   if (filterDestinationCountryId.value) {
     changes = changes.filter(change => change.toCountryId === filterDestinationCountryId.value)
+  }
+
+  if (filterStartDate.value) {
+    const startDate = new Date(filterStartDate.value)
+    startDate.setHours(0, 0, 0, 0)
+    changes = changes.filter(change => change.date >= startDate)
+  }
+
+  if (filterEndDate.value) {
+    const endDate = new Date(filterEndDate.value)
+    endDate.setHours(23, 59, 59, 999)
+    changes = changes.filter(change => change.date <= endDate)
   }
 
   return changes
@@ -227,18 +242,12 @@ const fetchPlayersAndChanges = async () => {
         <div class="field">
           <label class="label">Select Nation</label>
           <div class="control">
-            <div class="select is-fullwidth" :class="{ 'is-loading': loadingCountries }">
-              <select v-model="selectedCountryId" :disabled="loadingCountries">
-                <option value="">{{ loadingCountries ? 'Loading countries...' : 'Choose a country' }}</option>
-                <option
-                  v-for="country in sortedCountries"
-                  :key="country._id"
-                  :value="country._id"
-                >
-                  {{ country.name }}
-                </option>
-              </select>
-            </div>
+            <CountrySelect
+              v-model="selectedCountryId"
+              :countries="sortedCountries"
+              :placeholder="loadingCountries ? 'Loading countries...' : 'Choose a country'"
+              :disabled="loadingCountries"
+            />
           </div>
         </div>
 
@@ -313,18 +322,11 @@ const fetchPlayersAndChanges = async () => {
               <div class="field">
                 <label class="label">Source Country (From)</label>
                 <div class="control">
-                  <div class="select is-fullwidth">
-                    <select v-model="filterSourceCountryId">
-                      <option value="">All countries</option>
-                      <option
-                        v-for="country in sortedCountries"
-                        :key="country._id"
-                        :value="country._id"
-                      >
-                        {{ country.name }}
-                      </option>
-                    </select>
-                  </div>
+                  <CountrySelect
+                    v-model="filterSourceCountryId"
+                    :countries="sortedCountries"
+                    placeholder="All countries"
+                  />
                 </div>
               </div>
             </div>
@@ -332,18 +334,37 @@ const fetchPlayersAndChanges = async () => {
               <div class="field">
                 <label class="label">Destination Country (To)</label>
                 <div class="control">
-                  <div class="select is-fullwidth">
-                    <select v-model="filterDestinationCountryId">
-                      <option value="">All countries</option>
-                      <option
-                        v-for="country in sortedCountries"
-                        :key="country._id"
-                        :value="country._id"
-                      >
-                        {{ country.name }}
-                      </option>
-                    </select>
-                  </div>
+                  <CountrySelect
+                    v-model="filterDestinationCountryId"
+                    :countries="sortedCountries"
+                    placeholder="All countries"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column">
+              <div class="field">
+                <label class="label">Start Date</label>
+                <div class="control">
+                  <input
+                    class="input"
+                    type="date"
+                    v-model="filterStartDate"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="field">
+                <label class="label">End Date</label>
+                <div class="control">
+                  <input
+                    class="input"
+                    type="date"
+                    v-model="filterEndDate"
+                  />
                 </div>
               </div>
             </div>
@@ -352,8 +373,8 @@ const fetchPlayersAndChanges = async () => {
                 <div class="control">
                   <button
                     class="button is-light"
-                    @click="filterSourceCountryId = ''; filterDestinationCountryId = ''"
-                    :disabled="!filterSourceCountryId && !filterDestinationCountryId"
+                    @click="filterSourceCountryId = ''; filterDestinationCountryId = ''; filterStartDate = ''; filterEndDate = ''"
+                    :disabled="!filterSourceCountryId && !filterDestinationCountryId && !filterStartDate && !filterEndDate"
                   >
                     Clear Filters
                   </button>

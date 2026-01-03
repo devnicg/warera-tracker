@@ -73,7 +73,7 @@ export class WarEraAPI {
       const country = response.data.result.data
 
       if (country.code) {
-        country.flagUrl = `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`
+        country.flagUrl = `https://app.warera.io/images/flags/${country.code.toLowerCase()}.svg?v=16`
       }
 
       this.countryCache.set(countryId, country)
@@ -147,7 +147,7 @@ export class WarEraAPI {
 
       countries.forEach((country: Country) => {
         if (country.code) {
-          country.flagUrl = `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`
+          country.flagUrl = `https://app.warera.io/images/flags/${country.code.toLowerCase()}.svg?v=16`
         }
         this.countryCache.set(country._id, country)
       })
